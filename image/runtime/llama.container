@@ -1,0 +1,17 @@
+[Unit]
+Description=Local OpenAI-compatible llama.cpp server
+After=network.target
+
+[Container]
+Image=localhost/llama-server:airgap
+ContainerName=llama
+Network=host
+Volume=/var/lib/plot/models:/models:ro,Z
+Exec=--model /models/default.gguf --host 127.0.0.1 --port 8081 --ctx-size 8192
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

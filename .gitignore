@@ -1,0 +1,17 @@
+# Terraform and OpenTofu state
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# Offline payloads and generated media
+bundle/
+dist/
+*.gguf
+*.tar
+*.tar.zst
+*.vhd
+
+# Test artifacts
+__pycache__/
+*.pyc

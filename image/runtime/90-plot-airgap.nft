@@ -1,0 +1,20 @@
+#!/usr/sbin/nft -f
+
+flush ruleset
+
+table inet plot_airgap {
+    chain input {
+        type filter hook input priority filter; policy drop;
+        iifname "lo" accept
+        ct state established,related accept
+    }
+
+    chain forward {
+        type filter hook forward priority filter; policy drop;
+    }
+
+    chain output {
+        type filter hook output priority filter; policy drop;
+        oifname "lo" accept
+    }
+}

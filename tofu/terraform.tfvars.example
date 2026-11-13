@@ -1,0 +1,5 @@
+subscription_id      = "00000000-0000-0000-0000-000000000000"
+admin_ssh_public_key = "ssh-ed25519 AAAA_REPLACE_WITH_REVIEWED_PUBLIC_KEY"
+source_image_id        = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/image-build/providers/Microsoft.Compute/galleries/plot/images/plot-airgap/versions/1.0.0"
+offline_media_disk_id  = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/plot-airgap-poc/providers/Microsoft.Compute/disks/plot-airgap-media"
+management_source_cidr = "10.90.0.0/24"

@@ -1,0 +1,13 @@
+[Unit]
+Description=Install Plot air-gap packet filter
+DefaultDependencies=no
+Before=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/nft -f /etc/nftables/90-plot-airgap.nft
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

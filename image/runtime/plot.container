@@ -1,0 +1,18 @@
+[Unit]
+Description=Plot appliance
+After=network.target
+
+[Container]
+Image=localhost/plot-appliance:airgap
+ContainerName=plot
+Network=host
+Volume=/var/lib/plot/data:/data:Z
+Volume=/var/lib/plot/workspace:/workspace:ro,Z
+Environment=PLOT_LISTEN=127.0.0.1:8080
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target
