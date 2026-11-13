@@ -1,6 +1,6 @@
-# Plot in a demonstrably zero-egress Azure VM
+# CoreStory - Azure Estate Intelligence Platform
 
-This proof of concept separates connected preparation from disconnected operation.
+This repository separates connected preparation from disconnected operation.
 Terraform creates one private Azure VM with an 80 GiB OS disk, an offline-transfer disk, no public IP, no NAT gateway, subnet default outbound access disabled, and a deny-all outbound network security group rule.
 The guest adds a second independent boundary: nftables drops every forwarded and outbound packet except loopback.
 
