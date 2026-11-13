@@ -1,4 +1,4 @@
-# CoreStory - Azure Estate Intelligence Platform
+# CoreStory - Air Gapped CoreStory Intelligence Platform
 
 This repository separates connected preparation from disconnected operation.
 Terraform creates one private Azure VM with an 80 GiB OS disk, an offline-transfer disk, no public IP, no NAT gateway, subnet default outbound access disabled, and a deny-all outbound network security group rule.
