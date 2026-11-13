@@ -18,7 +18,7 @@ class InfrastructureContractTest(unittest.TestCase):
     """Protect the properties that make the deployed VM an air gap."""
 
     def test_vm_has_an_80_gib_os_disk_and_only_private_networking(self) -> None:
-        main = read("tofu/main.tf")
+        main = read("terraform/main.tf")
         self.assertIn("disk_size_gb         = 80", main)
         self.assertIn("private_ip_address_allocation = \"Static\"", main)
         forbidden = (
@@ -32,7 +32,7 @@ class InfrastructureContractTest(unittest.TestCase):
             self.assertNotIn(token, main)
 
     def test_subnet_and_nsg_fail_closed_on_outbound_traffic(self) -> None:
-        main = read("tofu/main.tf")
+        main = read("terraform/main.tf")
         self.assertRegex(main, r"default_outbound_access_enabled\s*=\s*false")
         self.assertRegex(
             main,
@@ -45,8 +45,8 @@ class InfrastructureContractTest(unittest.TestCase):
         self.assertNotRegex(main, re.compile(r'direction\s*=\s*"Outbound".*?access\s*=\s*"Allow"', re.DOTALL))
 
     def test_vm_uses_prebaked_image_and_read_only_offline_media(self) -> None:
-        main = read("tofu/main.tf")
-        variables = read("tofu/variables.tf")
+        main = read("terraform/main.tf")
+        variables = read("terraform/variables.tf")
         self.assertRegex(main, r"source_image_id\s*=\s*var\.source_image_id")
         self.assertIn("managed_disk_id    = var.offline_media_disk_id", main)
         self.assertIn("caching            = \"ReadOnly\"", main)
@@ -116,8 +116,8 @@ class InfrastructureContractTest(unittest.TestCase):
         self.assertIn("prepare-rhel9.sh", builder)
 
     def test_vm_creation_has_access_and_console_prerequisites(self) -> None:
-        main = read("tofu/main.tf")
-        variables = read("tofu/variables.tf")
+        main = read("terraform/main.tf")
+        variables = read("terraform/variables.tf")
         self.assertIn("admin_ssh_key {", main)
         self.assertIn("public_key = var.admin_ssh_public_key", main)
         self.assertIn('variable "admin_ssh_public_key"', variables)
@@ -172,7 +172,8 @@ class InfrastructureContractTest(unittest.TestCase):
         workflow = read(".github/workflows/ci.yml")
         self.assertIn("contents: read", workflow)
         self.assertIn("./scripts/check.sh", workflow)
-        self.assertNotIn("tofu apply", workflow)
+        self.assertIn("hashicorp/setup-terraform", workflow)
+        self.assertNotIn("terraform apply", workflow)
         self.assertNotIn("permissions: write", workflow)
 
 

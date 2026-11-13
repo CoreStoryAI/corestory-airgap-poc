@@ -52,4 +52,4 @@ az image builder create \
 
 printf 'Image Builder submission created for %s/%s/%s with profile %s.\n' "$resource_group" "$gallery" "$image_definition" "$profile"
 printf 'Source contract: %s:%s:%s:<pinned-version>; customizer: %s.\n' "$IMAGE_PUBLISHER" "$IMAGE_OFFER" "$IMAGE_SKU" "$PREPARE_SCRIPT"
-printf 'Do not deploy tofu/ until the immutable gallery version contains Podman, nftables, and image/runtime.\n'
+printf 'Do not deploy terraform/ until the immutable gallery version contains Podman, nftables, and image/runtime.\n'

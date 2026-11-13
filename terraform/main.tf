@@ -1,6 +1,6 @@
 locals {
   tags = {
-    managed-by = "opentofu"
+    managed-by = "terraform"
     purpose    = "plot-airgap-poc"
   }
 }

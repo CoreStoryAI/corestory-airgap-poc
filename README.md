@@ -1,10 +1,10 @@
 # Plot in a demonstrably zero-egress Azure VM
 
 This proof of concept separates connected preparation from disconnected operation.
-OpenTofu creates one private Azure VM with an 80 GiB OS disk, an offline-transfer disk, no public IP, no NAT gateway, subnet default outbound access disabled, and a deny-all outbound network security group rule.
+Terraform creates one private Azure VM with an 80 GiB OS disk, an offline-transfer disk, no public IP, no NAT gateway, subnet default outbound access disabled, and a deny-all outbound network security group rule.
 The guest adds a second independent boundary: nftables drops every forwarded and outbound packet except loopback.
 
-The repository follows the neighboring `infra` repository's Azure/OpenTofu conventions without modifying it.
+The repository follows the neighboring `infra` repository's Azure/Terraform conventions without modifying it.
 Nothing here has been provisioned.
 No model weights or container archives are stored in this repository.
 
@@ -15,13 +15,13 @@ This remains a non-production proof until a reviewed Azure plan and runtime evid
 
 | Layer | Enforced control | Evidence |
 | --- | --- | --- |
-| Azure addressing | The NIC has only `10.80.0.10`; no `azurerm_public_ip` exists. | `tofu/main.tf`, `tofu output network_controls` |
-| Azure routing | The subnet sets `default_outbound_access_enabled = false`; there is no NAT or gateway resource. | `tofu/main.tf` and contract tests |
-| Azure filtering | The NSG's only outbound rule is `deny-all-egress`. | `tofu/main.tf` and contract tests |
+| Azure addressing | The NIC has only `10.80.0.10`; no `azurerm_public_ip` exists. | `terraform/main.tf`, `terraform output network_controls` |
+| Azure routing | The subnet sets `default_outbound_access_enabled = false`; there is no NAT or gateway resource. | `terraform/main.tf` and contract tests |
+| Azure filtering | The NSG's only outbound rule is `deny-all-egress`. | `terraform/main.tf` and contract tests |
 | Guest filtering | The nftables output and forward chains default to drop; output permits loopback only. | `image/runtime/90-plot-airgap.nft` |
 | Workload networking | Both Podman Quadlet units share the host namespace but bind their listeners to `127.0.0.1`; the guest firewall permits loopback and drops other output. | `image/runtime/*.container`, `image/runtime/90-plot-airgap.nft` |
 | Software supply | A connected station exports already-local OCI images and a GGUF file with SHA-256 checksums. | `scripts/build-offline-bundle.sh` |
-| Transfer | The VM receives a managed disk at LUN 10; the operator must mount it read-only, and import refuses writable mounts and verifies checksums before `podman load`. | `tofu/main.tf`, `image/runtime/import-media.sh` |
+| Transfer | The VM receives a managed disk at LUN 10; the operator must mount it read-only, and import refuses writable mounts and verifies checksums before `podman load`. | `terraform/main.tf`, `image/runtime/import-media.sh` |
 
 These controls demonstrate no IP egress from the VM at runtime.
 They do not protect against Azure control-plane actions by subscription administrators, malicious image publishers, hypervisor compromise, physical exfiltration, or data copied deliberately to replacement media.
@@ -97,7 +97,7 @@ Run the integration seam with an explicit profile:
 
 The placeholder submits only an organization-supplied Image Builder template; it does not infer identity, VNet, gallery destination, or a Marketplace version.
 Pin the exact Marketplace source version in that approved template rather than using `latest`.
-OpenTofu rejects an image definition or `latest` alias in favor of a version ID.
+Terraform rejects an image definition or `latest` alias in favor of a version ID.
 
 ### RHEL licensing and cloud boundary
 
@@ -107,7 +107,7 @@ BYOS private plans are not supported in CSP subscriptions, so availability must 
 Microsoft documents RHEL Marketplace images and BYOS Gold Images for Azure public and Azure Government, but the operator must query the selected cloud and region for the exact offer, SKU, and version before approving the build.
 These images are not available in Microsoft Azure operated by 21Vianet; this repository does not claim support there.
 Azure Government also requires its own CLI cloud selection, identity, networking, gallery, pricing review, and approved Image Builder template.
-The runtime OpenTofu remains unchanged because it consumes only an immutable gallery version ID; PAYG, BYOS, and cloud selection belong to connected image preparation.
+The runtime Terraform remains unchanged because it consumes only an immutable gallery version ID; PAYG, BYOS, and cloud selection belong to connected image preparation.
 
 ## Provisioning handoff
 
@@ -115,14 +115,14 @@ No apply was run for this proof.
 When reviewers approve provisioning:
 
 ```sh
-cp tofu/terraform.tfvars.example tofu/terraform.tfvars
+cp terraform/terraform.tfvars.example terraform/terraform.tfvars
 # Replace every placeholder with reviewed Azure resource IDs.
-tofu -chdir=tofu init
+terraform -chdir=terraform init
 
-tofu -chdir=tofu plan -out=plot-airgap.tfplan
+terraform -chdir=terraform plan -out=plot-airgap.tfplan
 # Review the plan for exactly one NIC, no public IP/NAT/gateway,
 # default outbound disabled, deny-all outbound, and an 80 GiB OS disk.
-tofu -chdir=tofu apply plot-airgap.tfplan
+terraform -chdir=terraform apply plot-airgap.tfplan
 ```
 
 Do not use remote-exec, cloud-init package installation, or a moving marketplace image.
@@ -162,20 +162,20 @@ podman ps
 curl --fail http://127.0.0.1:8081/v1/models
 ```
 
-A blog demonstration should capture the OpenTofu plan, Azure NIC effective routes and NSG rules, the nftables ruleset, a failed external HTTPS probe, a failed external DNS lookup, and a successful loopback model response.
+A blog demonstration should capture the Terraform plan, Azure NIC effective routes and NSG rules, the nftables ruleset, a failed external HTTPS probe, a failed external DNS lookup, and a successful loopback model response.
 A failed `curl` alone is not proof; the static controls and effective Azure state provide the causal evidence.
 
 ## Local validation
 
 ```sh
 python3 -m unittest discover -s tests -v
-tofu -chdir=tofu fmt -check
-tofu -chdir=tofu init -backend=false
-tofu -chdir=tofu validate
+terraform -chdir=terraform fmt -check
+terraform -chdir=terraform init -backend=false
+terraform -chdir=terraform validate
 shellcheck scripts/*.sh image/*.sh image/runtime/*.sh
 ```
 
-`tofu init` downloads the provider unless it is already cached, so it belongs to connected development and not the air-gapped VM.
+`terraform init` downloads the provider unless it is already cached, so it belongs to connected development and not the air-gapped VM.
 The Python contract suite is dependency-free and validates the zero-egress design without Azure credentials.
 
 ## Deliberate limitations

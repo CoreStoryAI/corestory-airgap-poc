@@ -15,13 +15,13 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Install OpenTofu
-        uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
         with:
-          tofu_version: 1.10.6
+          terraform_version: 1.14.0
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install --yes shellcheck
       - name: Initialize providers
-        run: tofu -chdir=tofu init -backend=false -input=false
+        run: terraform -chdir=terraform init -backend=false -input=false
       - name: Validate proof contract
         run: ./scripts/check.sh

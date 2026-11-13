@@ -1,4 +1,4 @@
-# Terraform and OpenTofu state
+# Terraform state
 .terraform/
 *.tfstate
 *.tfstate.*
