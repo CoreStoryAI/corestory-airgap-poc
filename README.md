@@ -83,8 +83,31 @@ Azure's Linux data-disk attachment does not expose a read-only flag; `caching = 
 
 The image-baking files under `image/` document the guest payload.
 `image/template.json` is deliberately a non-provisioning placeholder because an Azure Image Builder template needs organization-specific identity, network, gallery, and base-image decisions.
-Import `image/runtime/` into the approved image pipeline, install Podman, nftables, curl, and core utilities, run `image/runtime/install.sh`, then publish an immutable Azure Compute Gallery image version.
+The explicit `rhel9` profile uses the PAYG Marketplace source family `RedHat:RHEL:9-lvm-gen2:<pinned-version>` and `image/prepare-rhel9.sh` for connected preparation.
+The approved image pipeline must stage this repository at `/tmp/plot-airgap`, invoke the preparation script as root on RHEL 9, and publish the result as an immutable Azure Compute Gallery image version.
+The script installs Podman, nftables, curl, `util-linux`, and SELinux tooling with `dnf`, then removes the package cache before image publication.
+It disables and masks both `firewalld.service` and the distribution `nftables.service` so only `plot-airgap-firewall.service` owns the active ruleset.
+The Podman workloads remain Quadlets, and their bind mounts use `:Z` or `:ro,Z` labels while SELinux stays enforcing.
+
+Run the integration seam with an explicit profile:
+
+```sh
+./image/build-image.sh rhel9 <resource-group> <gallery-name> <image-definition>
+```
+
+The placeholder submits only an organization-supplied Image Builder template; it does not infer identity, VNet, gallery destination, or a Marketplace version.
+Pin the exact Marketplace source version in that approved template rather than using `latest`.
 OpenTofu rejects an image definition or `latest` alias in favor of a version ID.
+
+### RHEL licensing and cloud boundary
+
+The `RedHat:RHEL:9-lvm-gen2` source family is the standard-repository PAYG path and carries the applicable RHEL software charge while the build VM exists.
+BYOS uses Red Hat Gold Images/private plans, avoids the PAYG RHEL premium, and requires the customer to supply valid Red Hat entitlement and update access before the image is disconnected.
+BYOS private plans are not supported in CSP subscriptions, so availability must be verified for the target subscription instead of assuming the PAYG identifier can be reused.
+Microsoft documents RHEL Marketplace images and BYOS Gold Images for Azure public and Azure Government, but the operator must query the selected cloud and region for the exact offer, SKU, and version before approving the build.
+These images are not available in Microsoft Azure operated by 21Vianet; this repository does not claim support there.
+Azure Government also requires its own CLI cloud selection, identity, networking, gallery, pricing review, and approved Image Builder template.
+The runtime OpenTofu remains unchanged because it consumes only an immutable gallery version ID; PAYG, BYOS, and cloud selection belong to connected image preparation.
 
 ## Provisioning handoff
 

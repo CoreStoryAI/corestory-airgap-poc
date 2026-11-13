@@ -75,6 +75,46 @@ class InfrastructureContractTest(unittest.TestCase):
         self.assertNotIn("PublishPort=", model)
         self.assertIn("/models/default.gguf", model)
 
+    def test_rhel9_profile_prepares_connected_image_with_dnf(self) -> None:
+        profile = read("image/profiles/rhel9.env")
+        prepare = read("image/prepare-rhel9.sh")
+        self.assertIn("IMAGE_PUBLISHER=RedHat", profile)
+        self.assertIn("IMAGE_OFFER=RHEL", profile)
+        self.assertIn("IMAGE_SKU=9-lvm-gen2", profile)
+        self.assertIn("dnf -y install", prepare)
+        for package in ("podman", "nftables", "curl", "util-linux"):
+            self.assertIn(package, prepare)
+        self.assertLess(prepare.index("dnf -y install"), prepare.rindex("runtime/install.sh"))
+
+    def test_rhel9_profile_has_one_firewall_owner(self) -> None:
+        prepare = read("image/prepare-rhel9.sh")
+        install = read("image/runtime/install.sh")
+        self.assertIn("systemctl disable --now firewalld.service", prepare)
+        self.assertIn("systemctl mask firewalld.service", prepare)
+        self.assertIn("systemctl disable --now nftables.service", prepare)
+        self.assertIn("systemctl enable plot-airgap-firewall.service", install)
+
+    def test_rhel9_runtime_keeps_quadlets_selinux_labeled(self) -> None:
+        prepare = read("image/prepare-rhel9.sh")
+        install = read("image/runtime/install.sh")
+        plot = read("image/runtime/plot.container")
+        model = read("image/runtime/llama.container")
+        self.assertIn("PLOT_AIRGAP_RUNTIME_DIR", prepare)
+        self.assertIn("PLOT_AIRGAP_RUNTIME_DIR", install)
+        self.assertIn("/etc/containers/systemd", install)
+        self.assertIn("restorecon -RFv /etc/containers/systemd /var/lib/plot", install)
+        self.assertIn(":Z", plot)
+        self.assertIn(":ro,Z", plot)
+        self.assertIn(":ro,Z", model)
+        self.assertNotIn("setenforce 0", prepare)
+
+    def test_image_builder_accepts_an_explicit_rhel9_profile(self) -> None:
+        builder = read("image/build-image.sh")
+        self.assertIn("<profile>", builder)
+        self.assertIn("image/profiles/${profile}.env", builder)
+        self.assertIn("IMAGE_SKU", builder)
+        self.assertIn("prepare-rhel9.sh", builder)
+
     def test_vm_creation_has_access_and_console_prerequisites(self) -> None:
         main = read("tofu/main.tf")
         variables = read("tofu/variables.tf")
@@ -118,6 +158,15 @@ class InfrastructureContractTest(unittest.TestCase):
         self.assertIn("Kimi", readme)
         self.assertIn("does not fit", readme)
         self.assertIn("No ingestion", readme)
+
+    def test_documentation_states_rhel_licensing_and_cloud_boundaries(self) -> None:
+        readme = read("README.md")
+        self.assertIn("RedHat:RHEL:9-lvm-gen2", readme)
+        self.assertIn("PAYG", readme)
+        self.assertIn("BYOS", readme)
+        self.assertIn("Azure Government", readme)
+        self.assertIn("21Vianet", readme)
+        self.assertIn("private plans", readme)
 
     def test_ci_is_read_only_and_runs_the_repository_gate(self) -> None:
         workflow = read(".github/workflows/ci.yml")
